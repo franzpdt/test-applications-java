@@ -18,11 +18,15 @@ public class StressController {
 
     @GetMapping("/memory")
     public ResponseEntity<String> memory() {
-        List<byte[]> sink = new ArrayList<>();
-        // Allocates 10 MB chunks until the JVM throws OutOfMemoryError
-        while (true) {
-            sink.add(new byte[10 * 1024 * 1024]);
-        }
+        Thread t = new Thread(() -> {
+            List<byte[]> sink = new ArrayList<>();
+            while (true) {
+                sink.add(new byte[10 * 1024 * 1024]);
+            }
+        });
+        t.setDaemon(false);
+        t.start();
+        return ResponseEntity.ok("OutOfMemoryError triggered in background thread");
     }
 
     @GetMapping("/cpu")

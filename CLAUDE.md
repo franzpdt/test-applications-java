@@ -52,7 +52,7 @@ project-api/src/main/java/com/example/projectapi/
 ```
 
 Key behaviours:
-- `/api/stress/memory` allocates 10 MB chunks in a tight loop until `OutOfMemoryError` — intentional; the JVM process will crash.
+- `/api/stress/memory` spawns a non-daemon background thread that allocates 10 MB chunks until `OutOfMemoryError` is thrown uncaught. The endpoint returns immediately; the JVM process survives because only the background thread dies.
 - `/api/stress/cpu?duration=N` spawns one thread per CPU core, busy-spinning for N seconds (1–300, default 60).
 - Swagger UI is served at `/swagger-ui.html` (root `/` redirects there via SpringDoc).
 - Logs are written to `APP_LOG_PATH` (default `./logs`) via Logback file appender.
