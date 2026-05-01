@@ -1,0 +1,81 @@
+---
+# project-api Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: project-api
+  template:
+    metadata:
+      labels:
+        app: project-api
+    spec:
+      containers:
+        - name: project-api
+          image: <DOCKER_REGISTRY>/project-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: APP_PORT
+              value: "5000"
+            - name: APP_LOG_PATH
+              value: /app/logs
+          readinessProbe:
+            httpGet:
+              path: /api/tasks
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/tasks
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+      volumes:
+        - name: logs
+          emptyDir: {}
+---
+# project-api Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-api
+spec:
+  type: ClusterIP
+  selector:
+    app: project-api
+  ports:
+    - port: 80
+      targetPort: 5000
+---
+# project-api-caller Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project-api-caller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: project-api-caller
+  template:
+    metadata:
+      labels:
+        app: project-api-caller
+    spec:
+      containers:
+        - name: project-api-caller
+          image: <DOCKER_REGISTRY>/project-api-caller:latest
+          imagePullPolicy: Always
+          env:
+            - name: BASE_URL
+              value: http://project-api

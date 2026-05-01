@@ -1,0 +1,4 @@
+# Extra environment variables injected into the project-api systemd service.
+# Each non-comment line must be a valid systemd Environment= directive, e.g.:
+#   Environment=MY_VAR=my_value
+Environment=DT_TAGS="plain_old_tag=nonprimarytag primary_tags.source=process-env-variable primary_tags.envtag=env-tag dt.cost.costcenter=env-costcenter-fullstack dt.cost.product=env-costproduct-fullstack dt.security_context=env-security-context-fullstack"
