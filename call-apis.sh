@@ -2,13 +2,16 @@
 set -euo pipefail
 
 BASE_URL="${1:-http://localhost:5000}"
-ITERATION=0
-MEMORY_EVERY=30  # every 30 × 10s = 5 minutes
+STRESS_DURATION=40           # seconds each stress type runs
+CYCLE_SECONDS=$((7 * 60))    # 420s total cycle
+GAP_SECONDS=60               # 1 min gap between stress calls
 
-echo "==> Calling project-api at $BASE_URL (Ctrl+C to stop)"
+echo "==> Calling project-api at $BASE_URL"
+echo "    Cycle: ${CYCLE_SECONDS}s | Stress duration: ${STRESS_DURATION}s | Gap between stress calls: ${GAP_SECONDS}s"
+echo "    Ctrl+C to stop"
 
 while true; do
-  ITERATION=$((ITERATION + 1))
+  CYCLE_START=$(date +%s)
   echo ""
   echo "--- $(date '+%Y-%m-%dT%H:%M:%S') ---"
 
@@ -20,15 +23,30 @@ while true; do
   curl -sf "$BASE_URL/api/projects/1" || true
   echo ""
 
-  echo "[GET] /api/stress/cpu?duration=1"
-  curl -sf "$BASE_URL/api/stress/cpu?duration=1" || true
+  # --- stress/memory (returns immediately; stress runs for STRESS_DURATION seconds in background) ---
+  echo "[GET] /api/stress/memory?duration=${STRESS_DURATION}"
+  curl -sf "$BASE_URL/api/stress/memory?duration=${STRESS_DURATION}" || true
   echo ""
 
-  if (( ITERATION % MEMORY_EVERY == 0 )); then
-    echo "[GET] /api/stress/memory (triggering OOM)"
-    curl -sf "$BASE_URL/api/stress/memory" || true
-    echo ""
-  fi
+  sleep $GAP_SECONDS
 
-  sleep 10
+  # --- stress/threads (returns immediately; exhausts HTTP thread pool for STRESS_DURATION seconds) ---
+  echo "[GET] /api/stress/threads?duration=${STRESS_DURATION}"
+  curl -sf "$BASE_URL/api/stress/threads?duration=${STRESS_DURATION}" || true
+  echo ""
+
+  sleep $GAP_SECONDS
+
+  # --- stress/cpu (blocks for STRESS_DURATION seconds before returning) ---
+  echo "[GET] /api/stress/cpu?duration=${STRESS_DURATION}"
+  curl -sf "$BASE_URL/api/stress/cpu?duration=${STRESS_DURATION}" || true
+  echo ""
+
+  # Sleep for the remainder of the 7-minute cycle
+  ELAPSED=$(( $(date +%s) - CYCLE_START ))
+  REMAINING=$(( CYCLE_SECONDS - ELAPSED ))
+  if (( REMAINING > 0 )); then
+    echo "--- next cycle in ${REMAINING}s ---"
+    sleep $REMAINING
+  fi
 done
