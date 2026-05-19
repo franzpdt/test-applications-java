@@ -6,6 +6,8 @@ APP_LOG_PATH="${APP_LOG_PATH:-./logs}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+mkdir -p "$APP_LOG_PATH"
+
 echo "==> Building project-api"
 cd "$SCRIPT_DIR/project-api"
 ./gradlew bootJar --quiet
