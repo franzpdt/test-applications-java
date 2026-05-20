@@ -1,9 +1,9 @@
-FROM gradle:8-jdk21 AS build
+FROM docker.io/library/gradle:8-jdk21 AS build
 WORKDIR /app
 COPY project-api/ .
 RUN gradle bootJar --no-daemon --quiet
 
-FROM openjdk:21-jre-slim
+FROM docker.io/library/openjdk:21-jre-slim
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 WORKDIR /app
