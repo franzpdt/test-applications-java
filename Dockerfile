@@ -18,6 +18,6 @@ ENV APP_LOG_PATH=/app/logs
 EXPOSE 5000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD curl -f http://localhost:5000/api/tasks || exit 1
+  CMD curl -f http://localhost:5000/api/projects || exit 1
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

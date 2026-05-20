@@ -36,13 +36,13 @@ spec:
               value: /app/logs
           readinessProbe:
             httpGet:
-              path: /api/tasks
+              path: /api/projects
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /api/tasks
+              path: /api/projects
               port: 5000
             initialDelaySeconds: 15
             periodSeconds: 30
