@@ -3,7 +3,7 @@ WORKDIR /app
 COPY project-api/ .
 RUN gradle bootJar --no-daemon --quiet
 
-FROM docker.io/library/openjdk:21-jre-slim
+FROM docker.io/library/eclipse-temurin:21-jre
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 WORKDIR /app
