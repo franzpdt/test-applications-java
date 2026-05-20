@@ -13,10 +13,19 @@ spec:
     metadata:
       labels:
         app: project-api
+        dynatrace.com/pod-label: label-project-api
+        pod-label: label-project-api
+        dynatrace.com/primary_tags.pod-label: label--project-api
+        primary_tags.pod-label: label--project-api
+      annotations:
+        dynatrace.com/pod-annotation: annotation-project-api
+        pod-annotation: annotation-project-api
+        dynatrace.com/primary_tags.pod-annotation: annotation--project-api
+        primary_tags.pod-annotation: annotation--project-api
     spec:
       containers:
         - name: project-api
-          image: <DOCKER_REGISTRY>/project-api:latest
+          image: localhost:32000/project-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
@@ -71,10 +80,19 @@ spec:
     metadata:
       labels:
         app: project-api-caller
+        dynatrace.com/pod-label: label-project-api-caller
+        pod-label: label-project-api-caller
+        dynatrace.com/primary_tags.pod-label: label--project-api-caller
+        primary_tags.pod-label: label--project-api-caller
+      annotations:
+        dynatrace.com/pod-annotation: annotation-project-api-caller
+        pod-annotation: annotation-project-api-caller
+        dynatrace.com/primary_tags.pod-annotation: annotation--project-api-caller
+        primary_tags.pod-annotation: annotation--project-api-caller
     spec:
       containers:
         - name: project-api-caller
-          image: <DOCKER_REGISTRY>/project-api-caller:latest
+          image: localhost:32000/project-api-caller:latest
           imagePullPolicy: Always
           env:
             - name: BASE_URL
