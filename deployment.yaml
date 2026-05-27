@@ -13,19 +13,20 @@ spec:
     metadata:
       labels:
         app: project-api
-        dynatrace.com/pod-label: label-project-api
-        metadata.dynatrace.com/pod-label-metadata: label-project-api
-        pod-label: label-project-api
-        dynatrace.com/primary_tags.pod-label: label--project-api
-        metadata.dynatrace.com/primary_tags.pod-label-metadata: label--project-api
-        primary_tags.pod-label: label--project-api
+        dynatrace.com/deployment-project-api-label: label-project-api-deployment-value
+        metadata.dynatrace.com/deployment-project-api-label-metadata: label-project-api-deployment-metadata-value
+        deployment-project-api-label: label-project-api-deployment-value
+        dynatrace.com/primary_tags.deployment-project-api-label: label-project-api-deployment-value
+        metadata.dynatrace.com/primary_tags.deployment-project-api-label-metadata: label-project-api-deployment-metadata-value
+        metadata.dynatrace.com/primary_tags.source: label-project-api-deployment-value
+        primary_tags.deployment-label: label-project-api-deployment-value
       annotations:
-        dynatrace.com/pod-annotation: annotation-project-api
-        metadata.dynatrace.com/pod-annotation-metadata: annotation-project-api
-        pod-annotation: annotation-project-api
-        dynatrace.com/primary_tags.pod-annotation: annotation--project-api
-        metadata.dynatrace.com/primary_tags.pod-annotation-metadata: annotation--project-api
-        primary_tags.pod-annotation: annotation--project-api
+        dynatrace.com/deployment-annotation: annotation-project-api-deployment-value
+        metadata.dynatrace.com/deployment-annotation-metadata: annotation-project-api-deployment-metadata-value
+        deployment-annotation: annotation-project-api-deployment-value
+        dynatrace.com/primary_tags.deployment-annotation: annotation-project-api-deployment-value
+        metadata.dynatrace.com/primary_tags.deployment-annotation-metadata: annotation-project-api-deployment-metadata-value
+        primary_tags.deployment-annotation: annotation-project-api-deployment-value
     spec:
       containers:
         - name: project-api
@@ -84,19 +85,19 @@ spec:
     metadata:
       labels:
         app: project-api-caller
-        dynatrace.com/pod-label: label-project-api-caller
-        metadata.dynatrace.com/pod-label-metadata: label-project-api-caller
-        pod-label: label-project-api-caller
-        dynatrace.com/primary_tags.pod-label: label--project-api-caller
-        metadata.dynatrace.com/primary_tags.pod-label-metadata: label--project-api-caller
-        primary_tags.pod-label: label--project-api-caller
+        dynatrace.com/deployment-project-api-caller-label: label-project-api-caller-deployment-value
+        metadata.dynatrace.com/deployment-project-api-caller-label-metadata: label-project-api-caller-deployment-metadata-value
+        deployment-project-api-caller-label: label-project-api-caller-deployment-value
+        dynatrace.com/primary_tags.deployment-project-api-caller-label: label-project-api-caller-deployment-value
+        metadata.dynatrace.com/primary_tags.deployment-project-api-caller-label-metadata: label-project-api-caller-deployment-metadata-value
+        primary_tags.deployment-project-api-caller-label: label-project-api-caller-deployment-value
       annotations:
-        dynatrace.com/pod-annotation: annotation-project-api-caller
-        metadata.dynatrace.com/pod-annotation-metadata: annotation-project-api-caller
-        pod-annotation: annotation-project-api-caller
-        dynatrace.com/primary_tags.pod-annotation: annotation--project-api-caller
-        metadata.dynatrace.com/primary_tags.pod-annotation-metadata: annotation--project-api-caller
-        primary_tags.pod-annotation: annotation--project-api-caller
+        dynatrace.com/deployment-annotation: annotation-project-api-caller-deployment-value
+        metadata.dynatrace.com/deployment-annotation-metadata: annotation-project-api-caller-deployment-metadata-value
+        deployment-annotation: annotation-project-api-caller-deployment-value
+        dynatrace.com/primary_tags.deployment-annotation: annotation-project-api-caller-deployment-value
+        metadata.dynatrace.com/primary_tags.deployment-annotation-metadata: annotation-project-api-caller-deployment-metadata-value
+        primary_tags.deployment-annotation: annotation-project-api-caller-deployment-value
     spec:
       containers:
         - name: project-api-caller
