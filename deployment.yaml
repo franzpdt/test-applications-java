@@ -84,7 +84,7 @@ spec:
     metadata:
       labels:
         app: project-api-caller
-        dynatrace.com/pod-label: label-project-api-
+        dynatrace.com/pod-label: label-project-api-caller
         metadata.dynatrace.com/pod-label-metadata: label-project-api-caller
         pod-label: label-project-api-caller
         dynatrace.com/primary_tags.pod-label: label--project-api-caller
