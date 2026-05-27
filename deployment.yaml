@@ -26,6 +26,7 @@ spec:
         deployment-annotation: annotation-project-api-deployment-value
         dynatrace.com/primary_tags.deployment-annotation: annotation-project-api-deployment-value
         metadata.dynatrace.com/primary_tags.deployment-annotation-metadata: annotation-project-api-deployment-metadata-value
+        metadata.dynatrace.com/primary_tags.source: annotation-project-api-deployment-value
         primary_tags.deployment-annotation: annotation-project-api-deployment-value
     spec:
       containers:
@@ -63,6 +64,22 @@ apiVersion: v1
 kind: Service
 metadata:
   name: project-api
+  labels:
+    dynatrace.com/service-project-api-label: label-project-api-service-value
+    metadata.dynatrace.com/service-project-api-label-metadata: label-project-api-service-metadata-value
+    service-project-api-label: label-project-api-service-value
+    dynatrace.com/primary_tags.service-project-api-label: label-project-api-service-value
+    metadata.dynatrace.com/primary_tags.service-project-api-label-metadata: label-project-api-service-metadata-value
+    metadata.dynatrace.com/primary_tags.source: label-project-api-service-value
+    primary_tags.service-label: label-project-api-service-value
+  annotations:
+    dynatrace.com/service-annotation: annotation-project-api-service-value
+    metadata.dynatrace.com/service-annotation-metadata: annotation-project-api-service-metadata-value
+    service-annotation: annotation-project-api-service-value
+    dynatrace.com/primary_tags.service-annotation: annotation-project-api-service-value
+    metadata.dynatrace.com/primary_tags.service-annotation-metadata: annotation-project-api-service-metadata-value
+    metadata.dynatrace.com/primary_tags.source: annotation-project-api-service-value
+    primary_tags.service-annotation: annotation-project-api-service-value
 spec:
   type: ClusterIP
   selector:
@@ -97,6 +114,7 @@ spec:
         deployment-annotation: annotation-project-api-caller-deployment-value
         dynatrace.com/primary_tags.deployment-annotation: annotation-project-api-caller-deployment-value
         metadata.dynatrace.com/primary_tags.deployment-annotation-metadata: annotation-project-api-caller-deployment-metadata-value
+        metadata.dynatrace.com/primary_tags.source: annotation-project-api-caller-deployment-value
         primary_tags.deployment-annotation: annotation-project-api-caller-deployment-value
     spec:
       containers:
