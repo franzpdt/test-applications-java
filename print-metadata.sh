@@ -103,8 +103,17 @@ print_env() {
   local var="$2"
   header "ENV: $label"
   echo ""
+  # DT_TAGS / DT_CUSTOM_PROP are injected only into the java process via
+  # `exec env "VAR=val" java ...` in entrypoint.sh — they are NOT part of the
+  # container-wide environment.  Read them from the process's own /proc environ
+  # instead (java is PID 1 due to the exec chain).  Fall back to printenv for
+  # variables that are set container-wide.
   "${EXEC[@]}" sh -c "
-    val=\$(printenv '$var' 2>/dev/null || true)
+    # Try the process environ first (null-separated, so use tr to split)
+    val=\$(tr '\0' '\n' < /proc/1/environ 2>/dev/null | grep '^${var}=' | cut -d= -f2-)
+    if [ -z \"\$val\" ]; then
+      val=\$(printenv '${var}' 2>/dev/null || true)
+    fi
     if [ -n \"\$val\" ]; then
       echo \"\$val\"
     else
