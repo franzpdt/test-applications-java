@@ -34,7 +34,7 @@ echo ""
 # forward them as --build-arg so they are injected only into the JVM process
 # environment via the generated entrypoint wrapper (not as container-wide ENV).
 PROCESS_ENV_BUILD_ARGS=()
-while IFS= read -r line; do
+while IFS= read -r line || [[ -n "$line" ]]; do
     [[ "$line" =~ ^[[:space:]]*# || -z "${line//[[:space:]]/}" ]] && continue
     if [[ "$line" =~ ^Environment=([^=]+)=(.*)$ ]]; then
         var_name="${BASH_REMATCH[1]}"

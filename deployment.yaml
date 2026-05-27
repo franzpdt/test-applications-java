@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: project-api
-          image: localhost:32000/test-applications-java:1.1.0
+          image: localhost:32000/test-applications-java:1.2.0
           imagePullPolicy: Always
           ports:
             - containerPort: 5000

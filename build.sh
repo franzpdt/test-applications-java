@@ -12,7 +12,7 @@ CALLER_IMAGE="$DOCKER_REGISTRY/project-api-caller"
 # environment via the generated entrypoint wrapper (not as container-wide ENV).
 PROCESS_ENV_BUILD_ARGS=()
 ENV_FILE="$(dirname "${BASH_SOURCE[0]}")/service.environment.variables.txt"
-while IFS= read -r line; do
+while IFS= read -r line || [[ -n "$line" ]]; do
     [[ "$line" =~ ^[[:space:]]*# || -z "${line//[[:space:]]/}" ]] && continue
     if [[ "$line" =~ ^Environment=([^=]+)=(.*)$ ]]; then
         var_name="${BASH_REMATCH[1]}"
