@@ -108,16 +108,30 @@ print_env() {
   # container-wide environment.  Read them from the process's own /proc environ
   # instead (java is PID 1 due to the exec chain).  Fall back to printenv for
   # variables that are set container-wide.
+  # DT_TAGS / DT_CUSTOM_PROP are injected only into the java process via
+  # `exec env "VAR=val" java ...` in entrypoint.sh — they are NOT part of the
+  # container-wide environment.  Read them from the process's own /proc environ
+  # (java is PID 1 due to the exec chain).  Three states are distinguished:
+  #   value       → key present, non-empty
+  #   (set — empty) → key present in process environ but baked in as empty
+  #                   (image built without the value in service.environment.variables.txt)
+  #   (not set)   → key absent from both process environ and container env
   "${EXEC[@]}" sh -c "
-    # Try the process environ first (null-separated, so use tr to split)
-    val=\$(tr '\0' '\n' < /proc/1/environ 2>/dev/null | grep '^${var}=' | cut -d= -f2-)
-    if [ -z \"\$val\" ]; then
-      val=\$(printenv '${var}' 2>/dev/null || true)
-    fi
-    if [ -n \"\$val\" ]; then
-      echo \"\$val\"
+    proc_env=\$(tr '\0' '\n' < /proc/1/environ 2>/dev/null)
+    if echo \"\$proc_env\" | grep -q '^${var}='; then
+      val=\$(echo \"\$proc_env\" | grep '^${var}=' | cut -d= -f2-)
+      if [ -n \"\$val\" ]; then
+        echo \"\$val\"
+      else
+        echo '(set — empty: image was built without this value in service.environment.variables.txt)'
+      fi
     else
-      echo '(not set)'
+      val=\$(printenv '${var}' 2>/dev/null || true)
+      if [ -n \"\$val\" ]; then
+        echo \"\$val\"
+      else
+        echo '(not set)'
+      fi
     fi
   " 2>/dev/null || echo "(exec error — container may not have sh)"
 }
