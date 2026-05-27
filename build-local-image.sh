@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
+# Usage: ./build-local-image.sh [--no-cache]
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NO_CACHE=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --no-cache) NO_CACHE="--no-cache"; shift ;;
+        *) echo "Unknown option: $1" >&2; exit 1 ;;
+    esac
+done
 
 CONTAINER_CMD="$(command -v podman 2>/dev/null || command -v docker 2>/dev/null || true)"
 if [[ -z "${CONTAINER_CMD}" ]]; then
@@ -38,6 +47,7 @@ done < "${SCRIPT_DIR}/service.environment.variables.txt"
 
 echo "==> Building API image: ${API_IMAGE}"
 "${CONTAINER_CMD}" build \
+    ${NO_CACHE} \
     "${PROCESS_ENV_BUILD_ARGS[@]}" \
     -f "${SCRIPT_DIR}/Dockerfile" \
     -t "${API_IMAGE}" \
@@ -46,6 +56,7 @@ echo "==> Building API image: ${API_IMAGE}"
 echo ""
 echo "==> Building caller image: ${CALLER_IMAGE}"
 "${CONTAINER_CMD}" build \
+    ${NO_CACHE} \
     -f "${SCRIPT_DIR}/Dockerfile.caller" \
     -t "${CALLER_IMAGE}" \
     "${SCRIPT_DIR}"
