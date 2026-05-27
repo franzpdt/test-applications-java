@@ -14,13 +14,17 @@ spec:
       labels:
         app: project-api
         dynatrace.com/pod-label: label-project-api
+        metadata.dynatrace.com/pod-label-metadata: label-project-api
         pod-label: label-project-api
         dynatrace.com/primary_tags.pod-label: label--project-api
+        metadata.dynatrace.com/primary_tags.pod-label-metadata: label--project-api
         primary_tags.pod-label: label--project-api
       annotations:
         dynatrace.com/pod-annotation: annotation-project-api
+        metadata.dynatrace.com/pod-annotation-metadata: annotation-project-api
         pod-annotation: annotation-project-api
         dynatrace.com/primary_tags.pod-annotation: annotation--project-api
+        metadata.dynatrace.com/primary_tags.pod-annotation-metadata: annotation--project-api
         primary_tags.pod-annotation: annotation--project-api
     spec:
       containers:
@@ -80,14 +84,18 @@ spec:
     metadata:
       labels:
         app: project-api-caller
-        dynatrace.com/pod-label: label-project-api-caller
+        dynatrace.com/pod-label: label-project-api-
+        metadata.dynatrace.com/pod-label-metadata: label-project-api-caller
         pod-label: label-project-api-caller
         dynatrace.com/primary_tags.pod-label: label--project-api-caller
+        metadata.dynatrace.com/primary_tags.pod-label-metadata: label--project-api-caller
         primary_tags.pod-label: label--project-api-caller
       annotations:
         dynatrace.com/pod-annotation: annotation-project-api-caller
+        metadata.dynatrace.com/pod-annotation-metadata: annotation-project-api-caller
         pod-annotation: annotation-project-api-caller
         dynatrace.com/primary_tags.pod-annotation: annotation--project-api-caller
+        metadata.dynatrace.com/primary_tags.pod-annotation-metadata: annotation--project-api-caller
         primary_tags.pod-annotation: annotation--project-api-caller
     spec:
       containers:
