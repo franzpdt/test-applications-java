@@ -2,14 +2,16 @@
 
 $ErrorActionPreference = 'Stop'
 
-Write-Host "==> Checking for winget"
-if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Write-Error "winget is not available. Install 'App Installer' from the Microsoft Store or upgrade to Windows 10 1709+."
-    exit 1
-}
+$MsiUrl  = 'https://aka.ms/download-jdk/microsoft-jdk-21-windows-x64.msi'
+$MsiPath = Join-Path $env:TEMP 'microsoft-jdk-21.msi'
+
+Write-Host "==> Downloading Microsoft OpenJDK 21"
+Invoke-WebRequest -Uri $MsiUrl -OutFile $MsiPath -UseBasicParsing
 
 Write-Host "==> Installing Microsoft OpenJDK 21"
-winget install --id Microsoft.OpenJDK.21 --source winget --accept-source-agreements --accept-package-agreements
+Start-Process msiexec.exe -ArgumentList "/i `"$MsiPath`" /quiet /norestart" -Wait -NoNewWindow
+
+Remove-Item $MsiPath -Force
 
 Write-Host "==> Refreshing PATH"
 $env:PATH = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' +
