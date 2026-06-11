@@ -1,13 +1,13 @@
 pluginManagement {
     repositories {
-        gradlePluginPortal()
+        maven("https://artifactory.lab.dynatrace.org/artifactory/gradle-plugins")
     }
 }
 
 dependencyResolutionManagement {
     repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
     repositories {
-        mavenCentral()
+        maven("https://artifactory.lab.dynatrace.org/artifactory/libs-release")
     }
 }
 

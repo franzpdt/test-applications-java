@@ -5,9 +5,10 @@ A Spring Boot REST API for testing and observability purposes. Provides project 
 ## Requirements
 
 - OpenJDK 21+
-- Gradle (or use the bundled `./gradlew` wrapper)
+- Gradle (or use the bundled `./gradlew` / `gradlew.bat` wrapper)
 
 Run `install-dependencies.sh` on a fresh Ubuntu machine to install OpenJDK 21 automatically.
+On Windows, run `install-dependencies.ps1` as Administrator (requires `winget`).
 
 ## Endpoints
 
@@ -28,33 +29,51 @@ Run `install-dependencies.sh` on a fresh Ubuntu machine to install OpenJDK 21 au
 
 ## Running locally (standalone)
 
+**Linux / macOS:**
 ```bash
 ./start.sh
-```
-
-Builds the fat jar and starts the API on port 5000. Override defaults with:
-
-```bash
 APP_PORT=8080 APP_LOG_PATH=/var/log/project-api ./start.sh
 ```
 
+**Windows (PowerShell):**
+```powershell
+.\start.ps1
+$env:APP_PORT=8080; $env:APP_LOG_PATH="C:\logs\project-api"; .\start.ps1
+```
+
+Builds the fat jar and starts the API on port 5000.
+
 ## Calling the API
 
+**Linux / macOS:**
 ```bash
 ./call-apis.sh                          # targets http://localhost:5000
 ./call-apis.sh http://my-host:5000      # custom base URL
 ```
 
-Runs in an infinite loop, exercising all endpoints every 10 seconds.
+**Windows (PowerShell):**
+```powershell
+.\call-apis.ps1                         # targets http://localhost:5000
+.\call-apis.ps1 http://my-host:5000     # custom base URL
+```
+
+Runs in an infinite loop, exercising all endpoints in a 7-minute cycle.
+
+## Build
+
+Build the Spring Boot fat jar locally (writes to `project-api/build/libs/`):
+
+```bash
+./build.sh
+```
 
 ## Docker
 
-Build and push images to a container registry:
+Build local API + caller images (auto-detects `podman` or `docker`):
 
 ```bash
-cp .env.example .env
-# Edit .env: set DOCKER_REGISTRY and CONTAINER_COMMAND
-./build.sh
+./build-local-image.sh             # add --no-cache to skip the layer cache
+./push-local.sh                    # tag and push to localhost:32000
 ```
 
 Run the API container:
@@ -94,6 +113,47 @@ Extra environment variables can be injected into the API service by adding `Envi
 sudo systemctl status project-api
 sudo systemctl status project-api-caller
 sudo journalctl -u project-api -f
+```
+
+## Windows service
+
+Requires [NSSM](https://nssm.cc) (`choco install nssm`).
+
+Install the API as a Windows service (builds the jar and registers it):
+
+```powershell
+# Run as Administrator
+.\deploy-service.ps1
+```
+
+Install the API caller as a separate Windows service:
+
+```powershell
+# Run as Administrator
+.\deploy-api-caller.ps1                        # defaults to http://localhost:5000
+.\deploy-api-caller.ps1 http://other-host:5000
+```
+
+Extra environment variables can be injected by adding `KEY=VALUE` lines to `service.environment.variables.txt` before running `deploy-service.ps1`.
+
+```powershell
+Get-Service project-api
+Restart-Service project-api
+Get-Content "C:\ProgramData\project-api\logs\stdout.log" -Wait
+```
+
+## Restarting (auto-detect)
+
+Both `restart.sh` (Linux/macOS) and `restart.ps1` (Windows) auto-detect the running mode (k8s / service / docker / podman / process) and restart accordingly:
+
+```bash
+./restart.sh                 # Linux/macOS
+./restart.sh -n my-namespace # k8s: specific namespace
+```
+
+```powershell
+.\restart.ps1                      # Windows
+.\restart.ps1 -Namespace my-ns     # k8s: specific namespace
 ```
 
 ## Kubernetes
