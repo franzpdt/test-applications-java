@@ -1,9 +1,9 @@
-FROM docker.io/library/gradle:8-jdk21 AS build
+FROM docker.io/library/gradle:8.14.5-jdk21 AS build
 WORKDIR /app
 COPY project-api/ .
 RUN gradle bootJar --no-daemon --quiet
 
-FROM docker.io/library/eclipse-temurin:21-jre
+FROM docker.io/library/eclipse-temurin:21.0.11_10-jre
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 WORKDIR /app
