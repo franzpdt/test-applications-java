@@ -117,9 +117,7 @@ sudo journalctl -u project-api -f
 
 ## Windows service
 
-Requires [NSSM](https://nssm.cc) (`choco install nssm`).
-
-Install the API as a Windows service (builds the jar and registers it):
+Install the API as a Windows scheduled task (builds the jar and registers it):
 
 ```powershell
 # Run as Administrator
@@ -137,9 +135,9 @@ Install the API caller as a separate Windows service:
 Extra environment variables can be injected by adding `KEY=VALUE` lines to `service.environment.variables.txt` before running `deploy-service.ps1`.
 
 ```powershell
-Get-Service project-api
-Restart-Service project-api
-Get-Content "C:\ProgramData\project-api\logs\stdout.log" -Wait
+Get-ScheduledTask project-api
+Stop-ScheduledTask project-api; Start-ScheduledTask project-api
+Get-Content "C:\ProgramData\project-api\logs\project-api.log" -Wait
 ```
 
 ## Restarting (auto-detect)

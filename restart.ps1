@@ -2,7 +2,7 @@
 #
 # Detects how project-api is running and restarts it:
 #   k8s      -> kubectl rollout restart deployment/project-api (microk8s or minikube)
-#   service  -> Restart-Service project-api (Windows service)
+#   task     -> Stop-ScheduledTask / Start-ScheduledTask (deployed via deploy-service.ps1)
 #   docker   -> docker restart project-api
 #   podman   -> podman restart project-api
 #   process  -> kills the java process and relaunches via start.ps1
@@ -52,10 +52,10 @@ if ($kc) {
     if ($LASTEXITCODE -eq 0) { $MODE = 'k8s' }
 }
 
-# 2. Windows service
+# 2. Scheduled task (deployed via deploy-service.ps1)
 if (-not $MODE) {
-    if (Get-Service -Name $APP_NAME -ErrorAction SilentlyContinue) {
-        $MODE = 'service'
+    if (Get-ScheduledTask -TaskName $APP_NAME -ErrorAction SilentlyContinue) {
+        $MODE = 'task'
     }
 }
 
@@ -83,7 +83,7 @@ if (-not $MODE) {
 }
 
 if (-not $MODE) {
-    Write-Error "ERROR: no running $APP_NAME found (checked k8s, Windows service, docker, podman, process)."
+    Write-Error "ERROR: no running $APP_NAME found (checked k8s, scheduled task, docker, podman, process)."
     exit 1
 }
 
@@ -102,12 +102,14 @@ switch ($MODE) {
         Invoke-Kubectl @('rollout', 'status', "deployment/$APP_NAME", '-n', $Namespace)
     }
 
-    'service' {
+    'task' {
         Write-Host ""
-        Write-Host "Restarting Windows service $APP_NAME ..."
-        Restart-Service -Name $APP_NAME -Force
+        Write-Host "Restarting scheduled task $APP_NAME ..."
+        Stop-ScheduledTask -TaskName $APP_NAME -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 3
+        Start-ScheduledTask -TaskName $APP_NAME
         Write-Host ""
-        Get-Service -Name $APP_NAME | Format-List Name, Status, StartType
+        Get-ScheduledTask -TaskName $APP_NAME | Select-Object TaskName, State | Format-List
     }
 
     'docker' {

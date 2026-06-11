@@ -21,6 +21,3 @@ Write-Host "==> Verifying Java installation"
 java -version
 
 Write-Host "==> All dependencies installed successfully"
-Write-Host ""
-Write-Host "Note: deploy-service.ps1 and deploy-api-caller.ps1 require NSSM."
-Write-Host "Install it with:  choco install nssm  (or download from https://nssm.cc)"

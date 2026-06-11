@@ -9,12 +9,7 @@ $APP_PORT      = 5000
 $SCRIPT_DIR    = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ENV_VARS_FILE = Join-Path $SCRIPT_DIR 'service.environment.variables.txt'
 
-Write-Host "=== Deploying $APP_NAME as a Windows service ==="
-
-if (-not (Get-Command nssm -ErrorAction SilentlyContinue)) {
-    Write-Error "NSSM is required. Install it with: choco install nssm  (or download from https://nssm.cc)"
-    exit 1
-}
+Write-Host "=== Deploying $APP_NAME as a scheduled task ==="
 
 $JavaCmd = Get-Command java -ErrorAction SilentlyContinue
 if (-not $JavaCmd) {
@@ -28,10 +23,11 @@ Write-Host "Creating directories..."
 New-Item -ItemType Directory -Path $DEPLOY_DIR -Force | Out-Null
 New-Item -ItemType Directory -Path $LOG_DIR    -Force | Out-Null
 
-$svc = Get-Service -Name $APP_NAME -ErrorAction SilentlyContinue
-if ($svc -and $svc.Status -eq 'Running') {
-    Write-Host "Stopping running $APP_NAME service..."
-    Stop-Service -Name $APP_NAME -Force
+$existingTask = Get-ScheduledTask -TaskName $APP_NAME -ErrorAction SilentlyContinue
+if ($existingTask -and $existingTask.State -eq 'Running') {
+    Write-Host "Stopping running $APP_NAME task..."
+    Stop-ScheduledTask -TaskName $APP_NAME
+    Start-Sleep -Seconds 3
 }
 
 Write-Host "Building $APP_NAME..."
@@ -59,39 +55,53 @@ if (Test-Path $ENV_VARS_FILE) {
     Write-Host "Warning: $ENV_VARS_FILE not found, skipping extra environment variables."
 }
 
-if (Get-Service -Name $APP_NAME -ErrorAction SilentlyContinue) {
-    Write-Host "Removing existing service..."
-    nssm stop $APP_NAME 2>$null
-    nssm remove $APP_NAME confirm
+# Create a launcher script so the task can set environment variables before starting java
+$LauncherPath = Join-Path $DEPLOY_DIR 'run.ps1'
+$launcherLines = @(
+    "`$env:APP_PORT     = '$APP_PORT'",
+    "`$env:APP_LOG_PATH = '$LOG_DIR'"
+)
+foreach ($key in $ExtraEnvVars.Keys) {
+    $launcherLines += "`$env:$key = '$($ExtraEnvVars[$key])'"
+}
+$launcherLines += "& '$JavaPath' -jar '$JarDest'"
+Set-Content -Path $LauncherPath -Value $launcherLines
+
+$PwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
+$PwshExe = if ($PwshCmd) { $PwshCmd.Source } else { (Get-Command powershell).Source }
+
+if (Get-ScheduledTask -TaskName $APP_NAME -ErrorAction SilentlyContinue) {
+    Write-Host "Removing existing scheduled task..."
+    Unregister-ScheduledTask -TaskName $APP_NAME -Confirm:$false
 }
 
-Write-Host "Creating Windows service via NSSM..."
-nssm install $APP_NAME $JavaPath
-nssm set $APP_NAME AppParameters "-jar `"$JarDest`""
-nssm set $APP_NAME AppDirectory $DEPLOY_DIR
-nssm set $APP_NAME AppStdout (Join-Path $LOG_DIR 'stdout.log')
-nssm set $APP_NAME AppStderr (Join-Path $LOG_DIR 'stderr.log')
-nssm set $APP_NAME AppRotateFiles 1
-nssm set $APP_NAME AppRestartDelay 5000
-nssm set $APP_NAME Start SERVICE_AUTO_START
+Write-Host "Registering scheduled task..."
+$action    = New-ScheduledTaskAction -Execute $PwshExe `
+                 -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$LauncherPath`"" `
+                 -WorkingDirectory $DEPLOY_DIR
+$trigger   = New-ScheduledTaskTrigger -AtStartup
+$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+$settings  = New-ScheduledTaskSettingsSet `
+                 -ExecutionTimeLimit ([TimeSpan]::Zero) `
+                 -RestartCount 10 `
+                 -RestartInterval (New-TimeSpan -Minutes 1) `
+                 -MultipleInstances IgnoreNew `
+                 -StartWhenAvailable
+Register-ScheduledTask -TaskName $APP_NAME -Action $action -Trigger $trigger `
+    -Principal $principal -Settings $settings -Force | Out-Null
 
-$envArgs = @("APP_PORT=$APP_PORT", "APP_LOG_PATH=$LOG_DIR")
-foreach ($key in $ExtraEnvVars.Keys) { $envArgs += "$key=$($ExtraEnvVars[$key])" }
-& nssm set $APP_NAME AppEnvironmentExtra @envArgs
-
-Write-Host "Enabling and starting service..."
-nssm start $APP_NAME
+Write-Host "Starting task..."
+Start-ScheduledTask -TaskName $APP_NAME
 
 Write-Host ""
 Write-Host "=== Deployment complete ==="
-Write-Host "Service status:"
-Get-Service -Name $APP_NAME | Format-List Name, Status, StartType
+Write-Host "Task status:"
+Get-ScheduledTask -TaskName $APP_NAME | Select-Object TaskName, State | Format-List
 Write-Host ""
 Write-Host "The API is listening on port $APP_PORT."
 Write-Host "Logs are written to $LOG_DIR."
 Write-Host ""
 Write-Host "Useful commands:"
-Write-Host "  Get-Service $APP_NAME"
-Write-Host "  Restart-Service $APP_NAME"
-Write-Host "  nssm edit $APP_NAME"
-Write-Host "  Get-Content `"$LOG_DIR\stdout.log`" -Wait"
+Write-Host "  Get-ScheduledTask $APP_NAME"
+Write-Host "  Stop-ScheduledTask $APP_NAME; Start-ScheduledTask $APP_NAME"
+Write-Host "  Get-Content `"$LOG_DIR\project-api.log`" -Wait"
