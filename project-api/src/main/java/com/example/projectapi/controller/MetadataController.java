@@ -10,9 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/metadata")
@@ -20,48 +19,26 @@ public class MetadataController {
 
     private static final Logger log = LoggerFactory.getLogger(MetadataController.class);
 
+    // OneAgent intercepts open() calls for this filename and returns a pointer to the
+    // actual enrichment data file. The hash is a fixed magic constant from the docs.
+    private static final String VIRTUAL_FILE = "dt_metadata_e617c525669e072eebe3d0f08212e8f2.properties";
+
     @GetMapping(value = "/virtual-file", produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> virtualFile() {
         log.info("GET /api/metadata/virtual-file");
         try {
-            Optional<Path> virtualFile = findVirtualFile();
-            if (virtualFile.isEmpty()) {
-                log.warn("GET /api/metadata/virtual-file — no dt_metadata_*.properties/json found in working directory");
-                return ResponseEntity.notFound().build();
-            }
+            String indirection = Files.readString(Path.of(VIRTUAL_FILE)).trim();
+            log.info("GET /api/metadata/virtual-file — indirection={}", indirection);
 
-            Path pointer = virtualFile.get();
-            // The virtual file contains a single line: the path to the actual enrichment data file.
-            // OneAgent intercepts the open() syscall and provides this content dynamically.
-            String indirection = Files.readString(pointer).trim();
-            log.info("GET /api/metadata/virtual-file — virtual file={}, indirection={}", pointer.getFileName(), indirection);
-
-            Path target = Path.of(indirection);
-            if (!Files.exists(target)) {
-                log.warn("GET /api/metadata/virtual-file — indirection target not found: {}", target);
-                return ResponseEntity.notFound().build();
-            }
-
-            return ResponseEntity.ok(Files.readString(target));
+            return ResponseEntity.ok(Files.readString(Path.of(indirection)));
+        } catch (NoSuchFileException e) {
+            log.warn("GET /api/metadata/virtual-file — virtual file not found (OneAgent not active?): {}", e.getFile());
+            return ResponseEntity.notFound().build();
         } catch (IOException e) {
             log.error("GET /api/metadata/virtual-file — IO error reading enrichment file", e);
             return ResponseEntity.internalServerError()
                     .contentType(MediaType.TEXT_PLAIN)
                     .body("error reading enrichment file: " + e.getMessage());
-        }
-    }
-
-    // Glob for dt_metadata_<hash>.properties or .json in the process working directory.
-    // OneAgent places the virtual file there when it instruments the process.
-    private Optional<Path> findVirtualFile() throws IOException {
-        Path workDir = Path.of(System.getProperty("user.dir", "."));
-        try (Stream<Path> files = Files.list(workDir)) {
-            return files
-                    .filter(p -> {
-                        String name = p.getFileName().toString();
-                        return name.matches("dt_metadata_[0-9a-f]+\\.(properties|json)");
-                    })
-                    .findFirst();
         }
     }
 }
