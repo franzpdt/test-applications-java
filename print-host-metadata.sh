@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # print-host-metadata.sh
 #
-# Prints Dynatrace host-level metadata files directly from the Kubernetes node:
+# Prints Dynatrace host-level metadata files:
 #   hostautotag.conf
 #   dt_host_metadata.properties
 #   dt_node_metadata.properties
 #
-# For microk8s (single-node, same machine) the files are read directly from
-# the local filesystem.  For minikube the files are read via `minikube ssh`.
+# Supports three environments:
+#   microk8s  – single-node k8s, files read directly from the local filesystem
+#   minikube  – files read via `minikube ssh`
+#   local     – standard (non-container) OneAgent installation, files read
+#               directly from the local filesystem
 #
 # Usage:
 #   ./print-host-metadata.sh
@@ -20,8 +23,7 @@ if command -v microk8s >/dev/null 2>&1; then
 elif command -v minikube >/dev/null 2>&1; then
   MODE="minikube"
 else
-  echo "ERROR: neither microk8s nor minikube found on PATH." >&2
-  exit 1
+  MODE="local"
 fi
 
 echo "mode : $MODE"
@@ -37,12 +39,12 @@ header() {
   echo "$SEP"
 }
 
-# Run a command on the node (directly for microk8s, via ssh for minikube).
+# Run a command on the node (directly for microk8s/local, via ssh for minikube).
 node_cmd() {
-  if [[ "$MODE" == "microk8s" ]]; then
-    bash -c "$1"
-  else
+  if [[ "$MODE" == "minikube" ]]; then
     minikube ssh -- "$1"
+  else
+    bash -c "$1"
   fi
 }
 
