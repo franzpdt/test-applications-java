@@ -71,7 +71,7 @@ if [[ "$MODE" != "local" ]]; then
   echo "pod  : $POD"
   echo "ns   : $NAMESPACE"
 
-  header "dt_metadata.properties (resolved)"
+  header "OneAgent virtual enrichment file"
   echo ""
   "${KUBECTL[@]}" exec "$POD" -n "$NAMESPACE" -c project-api -- \
     sh -c "curl -sf http://localhost:${APP_PORT}/api/metadata/virtual-file || echo '(curl failed — is the API running?)'"
@@ -83,7 +83,7 @@ fi
 BASE_URL="http://localhost:${APP_PORT}"
 echo "url  : ${BASE_URL}/api/metadata/virtual-file"
 
-header "dt_metadata.properties (resolved)"
+header "OneAgent virtual enrichment file"
 echo ""
 
 HTTP_CODE=$(curl -s -o /tmp/_dt_meta_body -w "%{http_code}" \
