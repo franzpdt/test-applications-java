@@ -86,20 +86,21 @@ echo "url  : ${BASE_URL}/api/metadata/virtual-file"
 header "OneAgent virtual enrichment file"
 echo ""
 
-HTTP_CODE=$(curl -s -o /tmp/_dt_meta_body -w "%{http_code}" \
-  "${BASE_URL}/api/metadata/virtual-file" 2>/dev/null || echo "000")
+BODY_FILE=$(mktemp)
+HTTP_CODE=$(curl -s -o "$BODY_FILE" -w "%{http_code}" \
+  "${BASE_URL}/api/metadata/virtual-file" 2>/dev/null) || true
 
 case "$HTTP_CODE" in
   200)
-    cat /tmp/_dt_meta_body ;;
+    cat "$BODY_FILE" ;;
   404)
     echo "(file not found on this host — OneAgent may not be installed)" ;;
   000)
     echo "(connection refused — is project-api running on port ${APP_PORT}?)" ;;
   *)
     echo "(unexpected HTTP ${HTTP_CODE})"
-    cat /tmp/_dt_meta_body ;;
+    cat "$BODY_FILE" ;;
 esac
 
-rm -f /tmp/_dt_meta_body
+rm -f "$BODY_FILE"
 echo ""
