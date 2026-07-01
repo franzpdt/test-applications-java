@@ -20,13 +20,13 @@ public class MetadataController {
 
     private static final Logger log = LoggerFactory.getLogger(MetadataController.class);
 
-    @GetMapping(value = "/dt-metadata", produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity<String> dtMetadata() {
-        log.info("GET /api/metadata/dt-metadata");
+    @GetMapping(value = "/virtual-file", produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> virtualFile() {
+        log.info("GET /api/metadata/virtual-file");
         try {
             Optional<Path> virtualFile = findVirtualFile();
             if (virtualFile.isEmpty()) {
-                log.warn("GET /api/metadata/dt-metadata — no dt_metadata_*.properties/json found in working directory");
+                log.warn("GET /api/metadata/virtual-file — no dt_metadata_*.properties/json found in working directory");
                 return ResponseEntity.notFound().build();
             }
 
@@ -34,17 +34,17 @@ public class MetadataController {
             // The virtual file contains a single line: the path to the actual enrichment data file.
             // OneAgent intercepts the open() syscall and provides this content dynamically.
             String indirection = Files.readString(pointer).trim();
-            log.info("GET /api/metadata/dt-metadata — virtual file={}, indirection={}", pointer.getFileName(), indirection);
+            log.info("GET /api/metadata/virtual-file — virtual file={}, indirection={}", pointer.getFileName(), indirection);
 
             Path target = Path.of(indirection);
             if (!Files.exists(target)) {
-                log.warn("GET /api/metadata/dt-metadata — indirection target not found: {}", target);
+                log.warn("GET /api/metadata/virtual-file — indirection target not found: {}", target);
                 return ResponseEntity.notFound().build();
             }
 
             return ResponseEntity.ok(Files.readString(target));
         } catch (IOException e) {
-            log.error("GET /api/metadata/dt-metadata — IO error reading enrichment file", e);
+            log.error("GET /api/metadata/virtual-file — IO error reading enrichment file", e);
             return ResponseEntity.internalServerError()
                     .contentType(MediaType.TEXT_PLAIN)
                     .body("error reading enrichment file: " + e.getMessage());

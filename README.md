@@ -18,7 +18,7 @@ On Windows, run `install-dependencies.ps1` as Administrator (requires `winget`).
 | GET | `/api/projects/{id}` | Get project by ID |
 | GET | `/api/stress/cpu?duration=60` | Saturate all CPU cores for `duration` seconds (1–300, default 60) |
 | GET | `/api/stress/memory` | Allocate memory in 10 MB chunks until `OutOfMemoryError` |
-| GET | `/api/metadata/dt-metadata` | Returns content of the Dynatrace virtual enrichment file (`dt_metadata.properties`, indirection resolved). 404 if OneAgent is not installed. |
+| GET | `/api/metadata/virtual-file` | Returns content of the Dynatrace OneAgent virtual enrichment file (indirection resolved). 404 if OneAgent is not installed. |
 
 
 ## Configuration

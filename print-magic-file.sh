@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # print-magic-file.sh
 #
-# Calls GET /api/metadata/dt-metadata on the running project-api and prints
+# Calls GET /api/metadata/virtual-file on the running project-api and prints
 # the content of the Dynatrace virtual enrichment file (dt_metadata.properties,
 # with indirection resolved by the API).
 #
@@ -74,20 +74,20 @@ if [[ "$MODE" != "local" ]]; then
   header "dt_metadata.properties (resolved)"
   echo ""
   "${KUBECTL[@]}" exec "$POD" -n "$NAMESPACE" -c project-api -- \
-    sh -c "curl -sf http://localhost:${APP_PORT}/api/metadata/dt-metadata || echo '(curl failed — is the API running?)'"
+    sh -c "curl -sf http://localhost:${APP_PORT}/api/metadata/virtual-file || echo '(curl failed — is the API running?)'"
   echo ""
   exit 0
 fi
 
 # ── local path: call the service directly ────────────────────────────────────
 BASE_URL="http://localhost:${APP_PORT}"
-echo "url  : ${BASE_URL}/api/metadata/dt-metadata"
+echo "url  : ${BASE_URL}/api/metadata/virtual-file"
 
 header "dt_metadata.properties (resolved)"
 echo ""
 
 HTTP_CODE=$(curl -s -o /tmp/_dt_meta_body -w "%{http_code}" \
-  "${BASE_URL}/api/metadata/dt-metadata" 2>/dev/null || echo "000")
+  "${BASE_URL}/api/metadata/virtual-file" 2>/dev/null || echo "000")
 
 case "$HTTP_CODE" in
   200)
