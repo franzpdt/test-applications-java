@@ -20,6 +20,7 @@ fi
 
 VERSION="$(cat "${SCRIPT_DIR}/VERSION" | tr -d '[:space:]')"
 REPO_NAME="$(basename "$(git -C "${SCRIPT_DIR}" remote get-url origin 2>/dev/null)" .git)"
+REPO_NAME="${REPO_NAME:-$(basename "${SCRIPT_DIR}")}"
 
 API_IMAGE="${REPO_NAME}:${VERSION}"
 CALLER_IMAGE="${REPO_NAME}-caller:${VERSION}"
