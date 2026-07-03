@@ -143,6 +143,7 @@ case "$MODE" in
 
     echo ""
     echo "Starting new process via start.sh ..."
+    mkdir -p "${APP_LOG_PATH:-$SCRIPT_DIR/logs}"
     nohup "$SCRIPT_DIR/start.sh" >> "${APP_LOG_PATH:-$SCRIPT_DIR/logs}/restart.log" 2>&1 &
     NEW_PID=$!
     echo "Started (PID $NEW_PID) — logs: ${APP_LOG_PATH:-$SCRIPT_DIR/logs}/restart.log"
