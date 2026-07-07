@@ -32,6 +32,10 @@ spec:
         metadata.dynatrace.com/primary_tags.pod-annotation-metadata: annotation-project-api-pod-metadata-value
         metadata.dynatrace.com/primary_tags.source: annotation-project-api-pod-value
         primary_tags.pod-annotation: annotation-project-api-pod-value
+        metadata.dynatrace.com/primary_tags.dtmetavsdttags: dtmetadata
+        metadata.dynatrace.com/primary_tags.hosttagvsdtmeta: dtmetadata
+        metadata.dynatrace.com/primary_tags.dtmetavscentralcon: dtmetadata
+        metadata.dynatrace.com/primary_tags.dttagsvsdtmetavscentralprocess: dtmetadata
     spec:
       containers:
         - name: project-api
