@@ -1,6 +1,6 @@
 # test-applications-java / project-api
 
-A Spring Boot REST API for testing and observability purposes. Provides project management endpoints, a CPU stress endpoint, and a memory stress endpoint that triggers an `OutOfMemoryError`.
+A plain Java Servlet REST API (no Spring) for testing and observability purposes. Deployed as a WAR on standalone Jetty 12. Provides project management endpoints, stress endpoints (CPU, memory, thread-pool), and a Dynatrace metadata endpoint.
 
 ## Requirements
 
@@ -16,8 +16,12 @@ On Windows, run `install-dependencies.ps1` as Administrator (requires `winget`).
 |--------|------|-------------|
 | GET | `/api/projects` | List all projects (5 seeded on startup) |
 | GET | `/api/projects/{id}` | Get project by ID |
+| POST | `/api/projects` | Create a project (JSON body) |
+| PUT | `/api/projects/{id}` | Update a project (JSON body) |
+| DELETE | `/api/projects/{id}` | Delete a project |
 | GET | `/api/stress/cpu?duration=60` | Saturate all CPU cores for `duration` seconds (1–300, default 60) |
-| GET | `/api/stress/memory` | Allocate memory in 10 MB chunks until `OutOfMemoryError` |
+| GET | `/api/stress/memory?duration=60` | Fill heap toward 95% then trigger `OutOfMemoryError` in background |
+| GET | `/api/stress/threads?duration=60` | Exhaust the HTTP thread pool via self-requests for `duration` seconds |
 | GET | `/api/metadata/virtual-file` | Returns content of the Dynatrace OneAgent virtual enrichment file (indirection resolved). 404 if OneAgent is not installed. |
 
 
@@ -27,6 +31,7 @@ On Windows, run `install-dependencies.ps1` as Administrator (requires `winget`).
 |---|---|---|
 | `APP_PORT` | `5000` | HTTP listen port |
 | `APP_LOG_PATH` | `./logs` | Directory for log files |
+| `MAX_HTTP_THREADS` | `20` | Thread pool size reported by `/api/stress/threads` |
 
 ## Running locally (standalone)
 
@@ -42,7 +47,7 @@ APP_PORT=8080 APP_LOG_PATH=/var/log/project-api ./start.sh
 $env:APP_PORT=8080; $env:APP_LOG_PATH="C:\logs\project-api"; .\start.ps1
 ```
 
-Builds the fat jar and starts the API on port 5000.
+Builds the WAR and starts the API via embedded Jetty on port 5000.
 
 ## Calling the API
 
@@ -62,13 +67,22 @@ Runs in an infinite loop, exercising all endpoints in a 7-minute cycle.
 
 ## Build
 
-Build the Spring Boot fat jar locally (writes to `project-api/build/libs/`):
+Build the WAR locally (writes to `project-api/build/libs/`):
 
 ```bash
-./build.sh
+cd project-api && ./gradlew war
 ```
 
 ## Docker
+
+### WAR on Jetty (`Dockerfile.war`)
+
+```bash
+docker build -f Dockerfile.war -t project-api-war:latest .
+docker run -p 5000:5000 project-api-war:latest
+```
+
+### Fat-jar image (`Dockerfile`) — legacy, kept for reference
 
 Build local API + caller images (auto-detects `podman` or `docker`):
 
@@ -93,7 +107,25 @@ docker run -d --name project-api-caller \
   <DOCKER_REGISTRY>/project-api-caller:latest
 ```
 
-## Systemd (Linux service)
+## Systemd — WAR on Jetty (Linux service)
+
+Install Jetty 12, build the WAR, and run it as a systemd service (`project-api-war`):
+
+```bash
+sudo ./deploy-webserver.sh
+# custom port / log path:
+sudo APP_PORT=8080 APP_LOG_PATH=/var/log/project-api ./deploy-webserver.sh
+```
+
+After deployment:
+
+```bash
+sudo systemctl status project-api-war
+sudo journalctl -u project-api-war -f
+curl http://localhost:5000/api/projects
+```
+
+## Systemd — fat jar (Linux service)
 
 Install the API as a systemd service (builds the jar, creates a dedicated service user, and registers the unit):
 
@@ -143,7 +175,7 @@ Get-Content "C:\ProgramData\project-api\logs\project-api.log" -Wait
 
 ## Restarting (auto-detect)
 
-Both `restart.sh` (Linux/macOS) and `restart.ps1` (Windows) auto-detect the running mode (k8s / service / docker / podman / process) and restart accordingly:
+Both `restart.sh` (Linux/macOS) and `restart.ps1` (Windows) auto-detect the running mode (k8s / service / war-service / docker / docker-war / podman / podman-war / process / war-process) and restart accordingly:
 
 ```bash
 ./restart.sh                 # Linux/macOS
@@ -175,9 +207,32 @@ cd project-api
 # Run a single test class
 ./gradlew test --tests "com.example.projectapi.SomeTest"
 
-# Build fat jar
-./gradlew bootJar
-
-# Run with dev profile (verbose logging)
-SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
+# Build WAR
+./gradlew war
 ```
+
+## Architecture
+
+Plain Jakarta Servlet 6.0 application — no Spring, no Spring Boot. Runs on standalone Jetty 12.
+
+```
+project-api/src/main/java/com/example/projectapi/
+├── servlet/
+│   ├── ProjectServlet.java    # CRUD: GET/POST/PUT/DELETE /api/projects
+│   ├── StressServlet.java     # /api/stress/cpu, /memory, /threads, /threads/block
+│   └── MetadataServlet.java   # GET /api/metadata/virtual-file
+├── model/
+│   ├── Project.java           # Plain POJO (id, name, description, status, owner, createdAt)
+│   └── ProjectStatus.java     # Enum: ACTIVE, ON_HOLD, COMPLETED, ARCHIVED
+├── repository/
+│   └── ProjectRepository.java # Singleton ConcurrentHashMap-backed in-memory store
+└── config/
+    └── DataSeeder.java        # ServletContextListener — seeds 5 projects on startup
+project-api/src/main/webapp/WEB-INF/web.xml  # Servlet + listener registration
+```
+
+| Library | Purpose |
+|---|---|
+| `jakarta.servlet-api:6.0.0` | Servlet API (provided by Jetty at runtime) |
+| `jackson-databind` | JSON serialization |
+| `logback-classic` | Logging |

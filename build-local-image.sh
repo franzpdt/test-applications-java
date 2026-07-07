@@ -31,10 +31,10 @@ echo "API image:      ${API_IMAGE}"
 echo "Caller image:   ${CALLER_IMAGE}"
 echo ""
 
-# Parse process-scope env vars from service.environment.variables.txt and
-# forward them as --build-arg so they are injected only into the JVM process
-# environment via the generated entrypoint wrapper (not as container-wide ENV).
-PROCESS_ENV_BUILD_ARGS=()
+# Parse env vars from service.environment.variables.txt and forward them as
+# --build-arg so they are baked into the image environment (Dockerfile.war
+# declares ARG/ENV for each recognised variable).
+ENV_BUILD_ARGS=()
 while IFS= read -r line || [[ -n "$line" ]]; do
     [[ "$line" =~ ^[[:space:]]*# || -z "${line//[[:space:]]/}" ]] && continue
     if [[ "$line" =~ ^Environment=([^=]+)=(.*)$ ]]; then
@@ -42,15 +42,15 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         var_value="${BASH_REMATCH[2]}"
         var_value="${var_value#\"}"   # strip leading "
         var_value="${var_value%\"}"   # strip trailing "
-        PROCESS_ENV_BUILD_ARGS+=("--build-arg" "${var_name}=${var_value}")
+        ENV_BUILD_ARGS+=("--build-arg" "${var_name}=${var_value}")
     fi
 done < "${SCRIPT_DIR}/service.environment.variables.txt"
 
 echo "==> Building API image: ${API_IMAGE}"
 "${CONTAINER_CMD}" build \
     ${NO_CACHE} \
-    "${PROCESS_ENV_BUILD_ARGS[@]}" \
-    -f "${SCRIPT_DIR}/Dockerfile" \
+    "${ENV_BUILD_ARGS[@]}" \
+    -f "${SCRIPT_DIR}/Dockerfile.war" \
     -t "${API_IMAGE}" \
     "${SCRIPT_DIR}"
 

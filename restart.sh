@@ -16,6 +16,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_NAME="project-api"
+WAR_SERVICE_NAME="project-api-war"
 NAMESPACE="default"
 
 while [[ $# -gt 0 ]]; do
@@ -47,14 +48,21 @@ if [[ -z "$MODE" ]]; then
   fi
 fi
 
-# 2. systemd service
+# 2. systemd service — JAR-based (project-api.service)
 if [[ -z "$MODE" ]]; then
   if systemctl list-units --full --all 2>/dev/null | grep -q "${APP_NAME}.service"; then
     MODE="service"
   fi
 fi
 
-# 3. Docker container
+# 2b. systemd service — WAR-based (project-api-war.service deployed by deploy-webserver.sh)
+if [[ -z "$MODE" ]]; then
+  if systemctl list-units --full --all 2>/dev/null | grep -q "${WAR_SERVICE_NAME}.service"; then
+    MODE="war-service"
+  fi
+fi
+
+# 3. Docker container — JAR-based (project-api)
 if [[ -z "$MODE" ]]; then
   if command -v docker >/dev/null 2>&1 && \
      docker ps -a --filter "name=^/${APP_NAME}$" --format '{{.Names}}' 2>/dev/null | grep -q .; then
@@ -62,7 +70,15 @@ if [[ -z "$MODE" ]]; then
   fi
 fi
 
-# 4. Podman container
+# 3b. Docker container — WAR-based (project-api-war)
+if [[ -z "$MODE" ]]; then
+  if command -v docker >/dev/null 2>&1 && \
+     docker ps -a --filter "name=^/${APP_NAME}-war$" --format '{{.Names}}' 2>/dev/null | grep -q .; then
+    MODE="docker-war"
+  fi
+fi
+
+# 4. Podman container — JAR-based
 if [[ -z "$MODE" ]]; then
   if command -v podman >/dev/null 2>&1 && \
      podman ps -a --filter "name=^${APP_NAME}$" --format '{{.Names}}' 2>/dev/null | grep -q .; then
@@ -70,15 +86,31 @@ if [[ -z "$MODE" ]]; then
   fi
 fi
 
-# 5. Bare process
+# 4b. Podman container — WAR-based
+if [[ -z "$MODE" ]]; then
+  if command -v podman >/dev/null 2>&1 && \
+     podman ps -a --filter "name=^${APP_NAME}-war$" --format '{{.Names}}' 2>/dev/null | grep -q .; then
+    MODE="podman-war"
+  fi
+fi
+
+# 5. Bare process — JAR
 if [[ -z "$MODE" ]]; then
   if pgrep -f "${APP_NAME}.*\.jar" >/dev/null 2>&1; then
     MODE="process"
   fi
 fi
 
+# 5b. Bare Jetty process — WAR (jetty start.jar running with project-api-war JETTY_BASE)
 if [[ -z "$MODE" ]]; then
-  echo "ERROR: no running project-api found (checked k8s, systemd, docker, podman, process)." >&2
+  if pgrep -f "start\.jar.*jetty\.base=.*project-api" >/dev/null 2>&1 || \
+     pgrep -f "start\.jar.*${APP_NAME}" >/dev/null 2>&1; then
+    MODE="war-process"
+  fi
+fi
+
+if [[ -z "$MODE" ]]; then
+  echo "ERROR: no running project-api found (checked k8s, systemd, docker, podman, process, war)." >&2
   exit 1
 fi
 
@@ -106,6 +138,14 @@ case "$MODE" in
     systemctl status "$APP_NAME" --no-pager || true
     ;;
 
+  war-service)
+    echo ""
+    echo "Restarting systemd service $WAR_SERVICE_NAME (WAR/Jetty) ..."
+    systemctl restart "$WAR_SERVICE_NAME"
+    echo ""
+    systemctl status "$WAR_SERVICE_NAME" --no-pager || true
+    ;;
+
   docker)
     echo ""
     echo "Restarting Docker container $APP_NAME ..."
@@ -114,12 +154,49 @@ case "$MODE" in
     docker ps --filter "name=^/${APP_NAME}$"
     ;;
 
+  docker-war)
+    echo ""
+    echo "Restarting Docker container ${APP_NAME}-war ..."
+    docker restart "${APP_NAME}-war"
+    echo ""
+    docker ps --filter "name=^/${APP_NAME}-war$"
+    ;;
+
   podman)
     echo ""
     echo "Restarting Podman container $APP_NAME ..."
     podman restart "$APP_NAME"
     echo ""
     podman ps --filter "name=^${APP_NAME}$"
+    ;;
+
+  podman-war)
+    echo ""
+    echo "Restarting Podman container ${APP_NAME}-war ..."
+    podman restart "${APP_NAME}-war"
+    echo ""
+    podman ps --filter "name=^${APP_NAME}-war$"
+    ;;
+
+  war-process)
+    PIDS=$(pgrep -f "start\.jar" | tr '\n' ' ')
+    echo ""
+    echo "Killing Jetty process(es): $PIDS"
+    pkill -f "start\.jar" || true
+
+    for i in {1..10}; do
+      if ! pgrep -f "start\.jar" >/dev/null 2>&1; then break; fi
+      sleep 1
+    done
+    if pgrep -f "start\.jar" >/dev/null 2>&1; then
+      echo "Process did not exit cleanly, sending SIGKILL ..."
+      pkill -9 -f "start\.jar" || true
+      sleep 1
+    fi
+
+    echo ""
+    echo "Starting new Jetty process via deploy-webserver.sh is required for WAR mode."
+    echo "Run: sudo $SCRIPT_DIR/deploy-webserver.sh"
     ;;
 
   process)

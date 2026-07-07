@@ -1,0 +1,32 @@
+FROM docker.io/library/gradle:8.14.5-jdk21 AS build
+WORKDIR /app
+COPY project-api/ .
+RUN gradle war --no-daemon --quiet
+
+FROM docker.io/library/jetty:12-jre21
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+USER jetty
+
+COPY --from=build /app/build/libs/project-api-*.war /var/lib/jetty/webapps/ROOT.war
+
+ENV APP_PORT=5000
+ENV APP_LOG_PATH=/var/log/jetty
+
+# Values are passed as --build-arg by the build scripts (sourced from
+# service.environment.variables.txt). They are baked into the image environment
+# so the running Jetty process can read them.
+ARG DT_TAGS=""
+ARG DT_CUSTOM_PROP=""
+ARG OTEL_RESOURCE_ATTRIBUTES=""
+ENV DT_TAGS=$DT_TAGS
+ENV DT_CUSTOM_PROP=$DT_CUSTOM_PROP
+ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
+
+EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl -f http://localhost:5000/api/projects || exit 1
+
+# Override Jetty's default port (8080) with APP_PORT
+CMD ["jetty.http.port=5000"]

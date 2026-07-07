@@ -14,8 +14,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 All Gradle commands run from inside `project-api/` using the wrapper:
 
 ```bash
-# Build fat jar
-cd project-api && ./gradlew bootJar
+# Build WAR
+cd project-api && ./gradlew war
 
 # Run tests
 cd project-api && ./gradlew test
@@ -23,7 +23,7 @@ cd project-api && ./gradlew test
 # Run a single test class
 cd project-api && ./gradlew test --tests "com.example.projectapi.SomeTest"
 
-# Start the API locally (builds + runs from repo root)
+# Start the API locally (builds WAR + downloads Jetty on first run + starts it)
 ./start.sh                      # port 5000, logs in ./logs
 APP_PORT=8080 ./start.sh        # custom port
 
@@ -34,34 +34,37 @@ APP_PORT=8080 ./start.sh        # custom port
 
 ## Architecture
 
-Spring Boot 3.x application (`project-api/`) with a `ConcurrentHashMap`-backed in-memory store. No database. All state resets on restart.
+Plain Jakarta Servlet 6.0 application (`project-api/`) with a `ConcurrentHashMap`-backed in-memory store. No Spring, no Spring Boot. Deployed as a WAR on standalone Jetty 12.
 
 ```
 project-api/src/main/java/com/example/projectapi/
-├── ProjectApiApplication.java     # @SpringBootApplication entry point
-├── controller/
-│   ├── ProjectController.java     # CRUD: GET/POST/PUT/DELETE /api/projects
-│   └── StressController.java      # GET /api/stress/cpu and /api/stress/memory
+├── servlet/
+│   ├── ProjectServlet.java    # CRUD: GET/POST/PUT/DELETE /api/projects
+│   ├── StressServlet.java     # /api/stress/cpu, /memory, /threads, /threads/block
+│   └── MetadataServlet.java   # GET /api/metadata/virtual-file
 ├── model/
-│   ├── Project.java               # JPA entity (id, name, description, status, owner, createdAt)
-│   └── ProjectStatus.java         # Enum: ACTIVE, ON_HOLD, COMPLETED, ARCHIVED
+│   ├── Project.java           # Plain POJO (id, name, description, status, owner, createdAt)
+│   └── ProjectStatus.java     # Enum: ACTIVE, ON_HOLD, COMPLETED, ARCHIVED
 ├── repository/
-│   └── ProjectRepository.java     # JpaRepository<Project, Long>
+│   └── ProjectRepository.java # Singleton ConcurrentHashMap-backed in-memory store
 └── config/
-    └── DataSeeder.java            # Seeds 5 projects into H2 on startup via CommandLineRunner
+    └── DataSeeder.java        # ServletContextListener — seeds 5 projects on startup
+project-api/src/main/webapp/WEB-INF/web.xml  # Servlet + listener registration
 ```
 
 Key behaviours:
-- `/api/stress/memory` spawns a non-daemon background thread that allocates 10 MB chunks until `OutOfMemoryError` is thrown uncaught. The endpoint returns immediately; the JVM process survives because only the background thread dies.
+- `/api/stress/memory` phase 1 fills the heap to 95%, then phase 2 triggers `OutOfMemoryError` in a background thread. The endpoint returns immediately.
 - `/api/stress/cpu?duration=N` spawns one thread per CPU core, busy-spinning for N seconds (1–300, default 60).
-- Swagger UI is served at `/swagger-ui.html` (root `/` redirects there via SpringDoc).
+- `/api/stress/threads?duration=N` fires `MAX_HTTP_THREADS` concurrent self-requests to `/api/stress/threads/block` to exhaust the thread pool.
 - Logs are written to `APP_LOG_PATH` (default `./logs`) via Logback file appender.
 
 ## Dependencies
 
 | Library | Purpose |
 |---|---|
-| `spring-boot-starter-web` | HTTP server (embedded Tomcat) |
+| `jakarta.servlet-api:6.0.0` | Servlet API (provided by Jetty at runtime) |
+| `jackson-databind` | JSON serialization |
+| `logback-classic` | Logging |
 
 ## Gradle wrapper
 

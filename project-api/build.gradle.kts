@@ -1,12 +1,10 @@
 plugins {
     java
-    id("org.springframework.boot") version "3.4.5"
-    id("io.spring.dependency-management") version "1.1.7"
-    id("io.github.goooler.shadow") version "8.1.8"
+    war
 }
 
 group = "com.example"
-version = "0.0.2-SNAPSHOT"
+version = "0.1.0-SNAPSHOT"
 
 java {
     toolchain {
@@ -15,26 +13,12 @@ java {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web") {
-        exclude(group = "org.springframework.boot", module = "spring-boot-starter-tomcat")
-    }
-    implementation("org.springframework.boot:spring-boot-starter-undertow")
-    implementation("com.amazonaws:aws-lambda-java-core:1.2.3")
-    implementation("com.amazonaws:aws-lambda-java-events:3.11.6")
-
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    compileOnly("jakarta.servlet:jakarta.servlet-api:6.0.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
+    implementation("ch.qos.logback:logback-classic:1.5.6")
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
-}
-
-// Spring Boot disables the plain jar task; Shadow needs it to build the Lambda fat JAR
-tasks.jar {
-    enabled = true
-}
-
-tasks.shadowJar {
-    archiveClassifier.set("lambda")
-    mergeServiceFiles()
 }

@@ -17,6 +17,9 @@ build/
 logs/
 *.log
 
+# Local Jetty distribution downloaded by start.sh
+.jetty/
+
 # Environment (keep .env.example)
 .env
 

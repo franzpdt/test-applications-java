@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # print-service-env.sh
 #
-# Prints the DT_TAGS and DT_CUSTOM_PROP environment variables as seen by the
-# project-api process running as a systemd service.
+# Prints the DT_TAGS, DT_CUSTOM_PROP, and OTEL_RESOURCE_ATTRIBUTES environment
+# variables as seen by the project-api process running as a systemd service.
 #
 # Reads directly from /proc/<pid>/environ so it reflects exactly what the JVM
 # process received — not just what is written in the unit file.
+#
+# Supports both deployment modes:
+#   project-api.service     — fat-jar via deploy-service.sh
+#   project-api-war.service — WAR on Jetty via deploy-webserver.sh
 #
 # Must be run as root (or with sudo) to read another process's /proc environ.
 #
@@ -14,16 +18,22 @@
 
 set -uo pipefail
 
-SERVICE="project-api"
-
 if [[ $EUID -ne 0 ]]; then
   echo "ERROR: this script must be run as root (use sudo)." >&2
   exit 1
 fi
 
-# ── locate the service PID ────────────────────────────────────────────────────
-if ! systemctl is-active --quiet "${SERVICE}.service" 2>/dev/null; then
-  echo "ERROR: ${SERVICE}.service is not running." >&2
+# ── locate the running service ────────────────────────────────────────────────
+SERVICE=""
+for candidate in "project-api" "project-api-war"; do
+  if systemctl is-active --quiet "${candidate}.service" 2>/dev/null; then
+    SERVICE="$candidate"
+    break
+  fi
+done
+
+if [[ -z "$SERVICE" ]]; then
+  echo "ERROR: neither project-api.service nor project-api-war.service is running." >&2
   exit 1
 fi
 
@@ -68,5 +78,6 @@ print_env() {
 # ── print vars ────────────────────────────────────────────────────────────────
 print_env "DT_TAGS"
 print_env "DT_CUSTOM_PROP"
+print_env "OTEL_RESOURCE_ATTRIBUTES"
 
 echo ""
