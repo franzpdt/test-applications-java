@@ -35,7 +35,7 @@ fi
 # ── Initialise JETTY_BASE once ────────────────────────────────────────────────
 if [[ ! -d "$JETTY_BASE" ]]; then
   mkdir -p "$JETTY_BASE/webapps"
-  java -jar "$JETTY_HOME/start.jar" --jetty.base="$JETTY_BASE" \
+  java -jar "$JETTY_HOME/start.jar" "jetty.base=$JETTY_BASE" \
     --add-module=http,ee10-deploy 2>&1 | grep -v "^NOTE:" || true
 fi
 
@@ -49,5 +49,5 @@ echo "==> Starting project-api on port $APP_PORT (logs: $APP_LOG_PATH)"
 exec java \
   -DAPP_LOG_PATH="$APP_LOG_PATH" \
   -jar "$JETTY_HOME/start.jar" \
-  --jetty.base="$JETTY_BASE" \
+  "jetty.base=$JETTY_BASE" \
   "jetty.http.port=$APP_PORT"
