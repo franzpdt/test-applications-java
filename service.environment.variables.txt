@@ -1,6 +1,6 @@
 # Extra environment variables injected into the project-api systemd service.
 # Each non-comment line must be a valid systemd Environment= directive, e.g.:
 #   Environment=MY_VAR=my_value
-Environment=DT_TAGS="plain_old_tag=nonprimarytag primary_tags.source=dttags primary_tags.dttags=env-tag primary_tags.envvar=dttags primary_tags.dtmetavsdttags=dttags primary_tags.dttagsvsdtmetavscentralprocess=dttags dt.cost.costcenter=env-tag-costcenter-fullstack dt.cost.product=env-tag-costproduct-fullstack dt.security_context=env-tag-security-context-fullstack"
+Environment=DT_TAGS="plain_old_tag=nonprimarytag primary_tags.source=dttags primary_tags.dttags=dttags primary_tags.envvar=dttags primary_tags.dtmetavsdttags=dttags primary_tags.dttagsvsdtmetavscentralprocess=dttags dt.cost.costcenter=env-tag-costcenter-fullstack dt.cost.product=env-tag-costproduct-fullstack dt.security_context=env-tag-security-context-fullstack"
 Environment=DT_CUSTOM_PROP="plain_old_prop=nonprimaryprop primary_tags.dtcustomprop=dtcustomprop primary_tags.source=dtcustomprop primary_tags.envvar=dtcustomprop dt.cost.costcenter=env-prop-costcenter-fullstack dt.cost.product=env-prop-costproduct-fullstack dt.security_context=env-prop-security-context-fullstack"
 Environment=OTEL_RESOURCE_ATTRIBUTES="primary_tags.otel=otel,primary_tags.source=otel,primary_tags.envvar=otel"
