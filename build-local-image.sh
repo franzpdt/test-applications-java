@@ -31,25 +31,14 @@ echo "API image:      ${API_IMAGE}"
 echo "Caller image:   ${CALLER_IMAGE}"
 echo ""
 
-# Parse process-scope env vars from service.environment.variables.txt and
-# forward them as --build-arg so they are injected only into the JVM process
-# environment via the generated entrypoint wrapper (not as container-wide ENV).
-PROCESS_ENV_BUILD_ARGS=()
-while IFS= read -r line || [[ -n "$line" ]]; do
-    [[ "$line" =~ ^[[:space:]]*# || -z "${line//[[:space:]]/}" ]] && continue
-    if [[ "$line" =~ ^Environment=([^=]+)=(.*)$ ]]; then
-        var_name="${BASH_REMATCH[1]}"
-        var_value="${BASH_REMATCH[2]}"
-        var_value="${var_value#\"}"   # strip leading "
-        var_value="${var_value%\"}"   # strip trailing "
-        PROCESS_ENV_BUILD_ARGS+=("--build-arg" "${var_name}=${var_value}")
-    fi
-done < "${SCRIPT_DIR}/service.environment.variables.txt"
+# DT_TAGS / DT_CUSTOM_PROP are no longer baked into the image at build time.
+# They are supplied at deploy time as container environment variables (k8s pod
+# spec injection from ONEAGENT_PROCESS_TAGS / ONEAGENT_CUSTOM_PROP; systemd via
+# the service.environment.variables.txt EnvironmentFile).
 
 echo "==> Building API image: ${API_IMAGE}"
 "${CONTAINER_CMD}" build \
     ${NO_CACHE} \
-    "${PROCESS_ENV_BUILD_ARGS[@]}" \
     -f "${SCRIPT_DIR}/Dockerfile" \
     -t "${API_IMAGE}" \
     "${SCRIPT_DIR}"
