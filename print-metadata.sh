@@ -103,19 +103,14 @@ print_env() {
   local var="$2"
   header "ENV: $label"
   echo ""
-  # DT_TAGS / DT_CUSTOM_PROP are injected only into the java process via
-  # `exec env "VAR=val" java ...` in entrypoint.sh — they are NOT part of the
-  # container-wide environment.  Read them from the process's own /proc environ
-  # instead (java is PID 1 due to the exec chain).  Fall back to printenv for
-  # variables that are set container-wide.
-  # DT_TAGS / DT_CUSTOM_PROP are injected only into the java process via
-  # `exec env "VAR=val" java ...` in entrypoint.sh — they are NOT part of the
-  # container-wide environment.  Read them from the process's own /proc environ
-  # (java is PID 1 due to the exec chain).  Three states are distinguished:
-  #   value       → key present, non-empty
-  #   (set — empty) → key present in process environ but baked in as empty
-  #                   (image built without the value in service.environment.variables.txt)
-  #   (not set)   → key absent from both process environ and container env
+  # DT_TAGS / DT_CUSTOM_PROP are supplied at deploy time as container env vars
+  # (k8s: injected into the pod spec from ONEAGENT_PROCESS_TAGS /
+  # ONEAGENT_CUSTOM_PROP; systemd: via service.environment.variables.txt).
+  # The JVM inherits them, so read from the process's own /proc environ (java is
+  # PID 1) and fall back to printenv.  Three states are distinguished:
+  #   value         → key present, non-empty
+  #   (set — empty) → key present in the process environ but set to an empty value
+  #   (not set)     → key absent from both process environ and container env
   "${EXEC[@]}" sh -c "
     proc_env=\$(tr '\0' '\n' < /proc/1/environ 2>/dev/null)
     if echo \"\$proc_env\" | grep -q '^${var}='; then
@@ -123,7 +118,7 @@ print_env() {
       if [ -n \"\$val\" ]; then
         echo \"\$val\"
       else
-        echo '(set — empty: image was built without this value in service.environment.variables.txt)'
+        echo '(set — empty value)'
       fi
     else
       val=\$(printenv '${var}' 2>/dev/null || true)
