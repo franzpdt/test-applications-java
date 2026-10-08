@@ -21,6 +21,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-undertow")
     implementation("com.amazonaws:aws-lambda-java-core:1.2.3")
     implementation("com.amazonaws:aws-lambda-java-events:3.11.6")
+    implementation("net.logstash.logback:logstash-logback-encoder:8.1")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
@@ -37,4 +38,7 @@ tasks.jar {
 tasks.shadowJar {
     archiveClassifier.set("lambda")
     mergeServiceFiles()
+    // Lambda-only logback.xml (JSON via LogstashEncoder); kept out of bootJar so the
+    // VM/container builds keep using logback-spring.xml
+    from("src/lambda/resources")
 }
