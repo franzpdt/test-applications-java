@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Lambda-only logging config, packaged into the shadow (-lambda) JAR only.
+  The Lambda handler does not boot Spring, so logback-spring.xml is never applied there.
+
+  LogstashEncoder writes one JSON object per line and includes all MDC entries,
+  so the dt.trace_id / dt.span_id / dt.trace_sampled values that the Dynatrace
+  OneAgent puts into the MDC end up as JSON fields.
+-->
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
+
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>
